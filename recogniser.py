@@ -2,8 +2,13 @@ from logger import *
 cv2, json, np, mss, PIL, copy = iM(["cv2", "json", "numpy", "mss", "PIL", "copy"])
 import matplotlib.pyplot as plt
 
-#bounding_box = {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
-bounding_box = {'top': 100, 'left': 0, 'width': 400, 'height': 400}
+bounding_box = {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
+#bounding_box = {'top': 100, 'left': 0, 'width': 400, 'height': 400}
+
+AREAMIN = (bounding_box["width"]*bounding_box["height"])/10000
+AREAMIN = 1000
+
+#info(AREAMIN)
 
 sct = mss.mss()
 
@@ -23,7 +28,6 @@ def display_group(group):
 
 
 def indiceCodeToNumberGeneral(indicesCode):
-
 	indices = []
 	for number in range(10):
 		if len(numbersData[number]) > 0:
@@ -230,7 +234,7 @@ def groupHorientation(npImage, h=0):
 
 			#Si el ultimo valor no es el de ahora, se crea un nuevo grupo_vector
 			if last != v:
-				if group and (group[0][1][h] - group[0][0][h]) > 300:
+				if group and (group[0][1][h] - group[0][0][h]) >= AREAMIN:
 					#print((group[1][h] - group[0][h]))
 					groups.append(group)
 
@@ -299,7 +303,7 @@ def searchGeometry(v, groups, geometry=[], maxn=4):
 		#info(turn, toCheck)
 		#if turn:
 		#	input()
-		if ((a[1] == v[1]) and intersects_2_groups(toCheck[0], toCheck[1])):# and ((len(geometry)+1) != maxn or intersects_2_groups(a, geometry[0])):
+		if ((a[1] == v[1]) and intersects_2_groups(toCheck[0], toCheck[1])) and not list(filter(lambda x: (x is a), geometry)):# and ((len(geometry)+1) != maxn or intersects_2_groups(a, geometry[0])):
 			#print(geometrySize, turn, toCheck[0], toCheck[1])
 			
 			
@@ -313,7 +317,7 @@ def searchGeometry(v, groups, geometry=[], maxn=4):
 				if intersects_2_groups(geometry[0][0], a[0]):
 					ac = copy.deepcopy(a)
 					ac[0][1][turn] = v[0][1][turn]
-					info("data", geometry, geometry[0][0], limit=False)
+					#info("data", geometry, geometry[0][0], limit=False)
 					return [[end[0][0] for end in geometry], ac[1]]
 			else:
 				#info("CONTINUE")
@@ -364,12 +368,16 @@ def intersects_2_groups(v1, v2):
 def get_vertical_image(image_horizontal):
 	return np.rot90(image_horizontal)
 
-while True:
-	sct_img = sct.grab(bounding_box)
+def screenImage():
+	return sct.grab(bounding_box)
 
-	numpy_image = np.array(sct_img)
+def screen():
+	return np.array(screenImage())
 
-	resized = cv2.resize(numpy_image, dsize=(int(bounding_box["width"]/2.5), int(bounding_box["height"]/2.5)), interpolation=cv2.INTER_CUBIC)
+def detectSudoku():
+	numpy_image = screen()
+
+	resized = cv2.resize(numpy_image, dsize=(int(bounding_box["width"]/2), int(bounding_box["height"]/2)), interpolation=cv2.INTER_CUBIC)
 
 	image_horizontal = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
@@ -377,16 +385,16 @@ while True:
 
 	fill("--")
 
-	getNumber(image_horizontal)
+	#getNumber(image_horizontal)
 
 	squaresGrouped = {}
 
-	squares = []#group(image_vertical, image_horizontal)
+	squares = group(image_vertical, image_horizontal)
 
 	for g in squares:
 		#print(g)
 		gg = g[0][0]
-		#info(gg, limit=False)#, (g[0][0], g[0][1]),(g[1][1], g[2][1]))
+		info(gg, limit=False)#, (g[0][0], g[0][1]),(g[1][1], g[2][1]))
 		cv2.line(resized,(gg[0][0], gg[0][1]),(gg[1][0], gg[1][1]),(255,0,0),5)
 		cv2.line(resized,(gg[1][0], gg[1][1]),(gg[2][0], gg[2][1]),(255,0,0),5)
 		cv2.line(resized,(gg[2][0], gg[2][1]),(gg[3][0], gg[3][1]),(255,0,0),5)
@@ -403,6 +411,9 @@ while True:
 	if True:
 		cv2.imshow('screen', resized)
 		if (cv2.waitKey(1) & 0xFF) == ord('q'):
-
 			cv2.destroyAllWindows()
-			break
+
+if __name__ == "__main__":
+	while True:
+		detectSudoku()
+		AREAMIN = 100
